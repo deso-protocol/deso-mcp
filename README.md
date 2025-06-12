@@ -2,6 +2,10 @@
 
 A comprehensive Model Context Protocol (MCP) server that provides **complete DeSo blockchain API coverage** for Cursor IDE. This server transforms Cursor's AI assistant into a DeSo development expert with extensive knowledge about all DeSo APIs, the deso-js SDK, DeSo Identity authentication, backend implementation details, production-ready code generation, and **comprehensive debugging solutions**.
 
+<a href="https://glama.ai/mcp/servers/@deso-protocol/deso-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@deso-protocol/deso-mcp/badge" alt="DeSo Server MCP server" />
+</a>
+
 ## 🔥 **What's New in v3.0**
 - **🛠️ Comprehensive Debugging Guide**: Real solutions for all major DeSo integration issues
 - **🏗️ Implementation Patterns**: Best practices learned from building production DeSo apps
@@ -471,4 +475,4 @@ echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "de
 
 ---
 
-**🚀 Ready to build amazing DeSo applications with AI assistance!** 
+**🚀 Ready to build amazing DeSo applications with AI assistance!**
