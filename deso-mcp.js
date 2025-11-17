@@ -34,13 +34,15 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import fs from 'fs/promises';
 import path from 'path';
 import http from 'http';
 
 // Get port from environment variable or default to 3000
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9999;
 const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces for Docker compatibility
 
 // Create server with explicit error handling
@@ -52,19 +54,15 @@ const server = new Server(
   {
     capabilities: {
       tools: {},
+      resources: {},
     },
   }
 );
 
-// Add error handling
-server.onerror = (error) => {
-  console.error("DeSo MCP Server error:", error);
-};
+const TOOL_CATALOG_URI = "resource://deso-mcp/tools/catalog";
 
-// List tools handler with explicit error handling
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  try {
-    const tools = [
+function getToolDefinitions() {
+  return [
       {
         name: "deso_api_explorer",
         description: "Comprehensive DeSo API explorer with backend implementation details and deso-js SDK integration",
@@ -294,11 +292,81 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         }
       }
     ];
+}
+
+function buildToolCatalogMarkdown() {
+  const tools = getToolDefinitions();
+  const header = `# Available Tools\n\n`;
+  const list = tools
+    .map((tool) => `- \`${tool.name}\` — ${tool.description}`)
+    .join("\n");
+  return `${header}${list}`;
+}
+
+const RESOURCE_CATALOG = new Map([
+  [
+    TOOL_CATALOG_URI,
+    {
+      metadata: {
+        name: "tools_overview",
+        title: "Tool Catalog",
+        uri: TOOL_CATALOG_URI,
+        description: "Overview of all MCP tools exposed by the DeSo server",
+        mimeType: "text/markdown",
+      },
+      getContents: () => ({
+        contents: [
+          {
+            uri: TOOL_CATALOG_URI,
+            mimeType: "text/markdown",
+            text: buildToolCatalogMarkdown(),
+          },
+        ],
+      }),
+    },
+  ],
+]);
+
+// Add error handling
+server.onerror = (error) => {
+  console.error("DeSo MCP Server error:", error);
+};
+
+// List tools handler with explicit error handling
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  try {
+    const tools = getToolDefinitions();
     
     console.error("DeSo MCP: Returning", tools.length, "tools");
     return { tools };
   } catch (error) {
     console.error("Error in DeSo ListTools:", error);
+    throw error;
+  }
+});
+
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  try {
+    const resources = Array.from(RESOURCE_CATALOG.values()).map(({ metadata }) => metadata);
+    return { resources };
+  } catch (error) {
+    console.error("Error in DeSo ListResources:", error);
+    throw error;
+  }
+});
+
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  try {
+    const uri = request.params?.uri;
+    const resource = uri ? RESOURCE_CATALOG.get(uri) : undefined;
+
+    if (!resource) {
+      throw new Error(`Unknown resource URI: ${uri}`);
+    }
+
+    return resource.getContents();
+  } catch (error) {
+    console.error("Error in DeSo ReadResource:", error);
     throw error;
   }
 });
